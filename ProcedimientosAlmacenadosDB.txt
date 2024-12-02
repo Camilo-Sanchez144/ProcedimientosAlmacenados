@@ -1,0 +1,82 @@
+CREATE DATABASE grafos;
+USE grafos;
+
+-- Tabla para almacenar los nodos (ciudades)
+CREATE TABLE Nodo (
+    id INT AUTO_INCREMENT PRIMARY KEY, -- Identificador único para cada nodo
+    nombre VARCHAR(50) UNIQUE NOT NULL -- Nombre de la ciudad
+);
+
+-- Tabla para almacenar las aristas (conexiones)
+CREATE TABLE Arista (
+    id INT AUTO_INCREMENT PRIMARY KEY, -- Identificador único para cada arista
+    origen INT NOT NULL, -- Nodo de origen (ciudad 1)
+    destino INT NOT NULL, -- Nodo de destino (ciudad 2)
+    FOREIGN KEY (origen) REFERENCES Nodo(id) ON DELETE CASCADE, -- Referencia a Nodo
+    FOREIGN KEY (destino) REFERENCES Nodo(id) ON DELETE CASCADE -- Referencia a Nodo
+);
+
+-- Insertar un nodo
+DELIMITER //
+CREATE PROCEDURE CrearNodo(nombreCiudad VARCHAR(50))
+BEGIN
+    INSERT INTO Nodo (nombre) VALUES (nombreCiudad);
+END //
+DELIMITER ;
+
+-- Insertar una arista
+DELIMITER //
+CREATE PROCEDURE CrearArista(origenCiudad VARCHAR(50), destinoCiudad VARCHAR(50))
+BEGIN
+    DECLARE idOrigen INT;
+    DECLARE idDestino INT;
+
+    SELECT id INTO idOrigen FROM Nodo WHERE nombre = origenCiudad;
+    SELECT id INTO idDestino FROM Nodo WHERE nombre = destinoCiudad;
+
+    IF idOrigen IS NOT NULL AND idDestino IS NOT NULL THEN
+        INSERT INTO Arista (origen, destino) VALUES (idOrigen, idDestino);
+    END IF;
+END //
+DELIMITER ;
+
+-- Consultar las conexiones de un nodo
+DELIMITER //
+CREATE PROCEDURE LeerConexiones(nombreCiudad VARCHAR(50))
+BEGIN
+    SELECT n2.nombre AS Conexion
+    FROM Nodo n1
+    JOIN Arista a ON n1.id = a.origen
+    JOIN Nodo n2 ON a.destino = n2.id
+    WHERE n1.nombre = nombreCiudad;
+END //
+DELIMITER ;
+
+-- Actualizar una conexión existente
+DELIMITER //
+CREATE PROCEDURE ActualizarConexion(origenCiudad VARCHAR(50), conexionAntigua VARCHAR(50), nuevaConexion VARCHAR(50))
+BEGIN
+    DECLARE idOrigen INT;
+    DECLARE idAntiguo INT;
+    DECLARE idNuevo INT;
+
+    SELECT id INTO idOrigen FROM Nodo WHERE nombre = origenCiudad;
+    SELECT id INTO idAntiguo FROM Nodo WHERE nombre = conexionAntigua;
+    SELECT id INTO idNuevo FROM Nodo WHERE nombre = nuevaConexion;
+
+    IF idOrigen IS NOT NULL AND idAntiguo IS NOT NULL AND idNuevo IS NOT NULL THEN
+        UPDATE Arista
+        SET destino = idNuevo
+        WHERE origen = idOrigen AND destino = idAntiguo;
+    END IF;
+END //
+DELIMITER ;
+
+-- Eliminar un nodo y sus conexiones
+DELIMITER //
+CREATE PROCEDURE EliminarNodo(nombreCiudad VARCHAR(50))
+BEGIN
+    DELETE FROM Nodo WHERE nombre = nombreCiudad;
+END //
+DELIMITER ;
+
